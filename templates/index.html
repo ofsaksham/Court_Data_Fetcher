@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delhi High Court Case Fetcher</title>
+    <link rel="stylesheet" href="/static/index.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Delhi High Court Case Status</h1>
+        
+        <div class="status">
+            <strong>Browser Status:</strong> Running
+        </div>
+        
+        <form action="/submit" method="POST">
+            <div class="form-group">
+                <label for="case_type">Case Type:</label>
+                <select name="case_type" id="case_type" required>
+                    <option value="">Select Case Type</option>
+                    {% for case_type in case_types %}
+                    <option value="{{ case_type.value }}">{{ case_type.text }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="case_number">Case Number:</label>
+                <input type="text" name="case_number" id="case_number" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="case_year">Case Year:</label>
+                <select name="case_year" id="case_year" required>
+                    <option value="">Select Year</option>
+                    {% for year in range(2025, 1950, -1) %}
+                    <option value="{{ year }}">{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="captcha-box">
+                <label><strong>Captcha Shown:</strong></label>
+                <div class="captcha-display">
+                    <div class="captcha-value" id="captcha-display">{{ captcha }}</div>
+                    <button type="button" class="hear-btn" onclick="hearCaptcha()" id="hear-btn" title="Hear Captcha">
+                        🔊
+                    </button>
+                    <button type="button" class="refresh-btn" onclick="refreshCaptcha()" id="refresh-btn" title="Refresh Captcha">
+                        🔄
+                    </button>
+                </div>
+                <label for="captcha_entered">Enter Captcha:</label>
+                <input type="text" name="captcha_entered" id="captcha_entered" required>
+            </div>
+            
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        function refreshCaptcha() {
+            const refreshBtn = document.getElementById('refresh-btn');
+            const captchaDisplay = document.getElementById('captcha-display');
+            
+            refreshBtn.disabled = true;
+            refreshBtn.classList.add('loading');
+            
+            fetch('/refresh-captcha')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        captchaDisplay.textContent = data.captcha;
+                        document.getElementById('captcha_entered').value = '';
+                    } else {
+                        alert('Error refreshing captcha: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error refreshing captcha. Please try again.');
+                })
+                .finally(() => {
+                    refreshBtn.disabled = false;
+                    refreshBtn.classList.remove('loading');
+                });
+        }
+
+        let isSpeaking = false;
+        let currentUtterance = null;
+
+        function hearCaptcha() {
+            const hearBtn = document.getElementById('hear-btn');
+            const captchaDisplay = document.getElementById('captcha-display');
+            const captchaText = captchaDisplay.textContent;
+            
+            speechSynthesis.cancel();
+            isSpeaking = false;
+            currentUtterance = null;
+            
+            isSpeaking = true;
+            hearBtn.classList.add('loading');
+            
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(captchaText);
+                utterance.rate = 2.0;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+                currentUtterance = utterance;
+                
+                const characters = captchaText.split('');
+                let currentIndex = 0;
+                
+                function speakNextCharacter() {
+                    if (!isSpeaking) return;
+                    
+                    if (currentIndex < characters.length) {
+                        const charUtterance = new SpeechSynthesisUtterance(characters[currentIndex]);
+                        charUtterance.rate = 1.0;
+                        charUtterance.pitch = 1.0;
+                        charUtterance.volume = 1.0;
+                        currentUtterance = charUtterance;
+                        
+                        charUtterance.onend = function() {
+                            if (isSpeaking) {
+                                currentIndex++;
+                                setTimeout(speakNextCharacter, 150);
+                            }
+                        };
+                        
+                        speechSynthesis.speak(charUtterance);
+                    } else {
+                        isSpeaking = false;
+                        currentUtterance = null;
+                        hearBtn.classList.remove('loading');
+                    }
+                }
+                
+                speakNextCharacter();
+            } else {
+                alert('Speech synthesis not supported in this browser. Please enter the captcha manually.');
+                isSpeaking = false;
+                currentUtterance = null;
+                hearBtn.classList.remove('loading');
+            }
+        }
+    </script>
+</body>
+</html>

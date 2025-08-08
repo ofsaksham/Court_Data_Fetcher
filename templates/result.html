@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Case Result</title>
+    <link rel="stylesheet" href="/static/result.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Case Result</h1>
+        
+        <div class="result-section">
+            {{ result_html|safe }}
+        </div>
+
+        <h2>Orders</h2>
+        <div class="result-section">
+            {{ orders_html|safe }}
+        </div>
+
+        <div class="button-group">
+            <a href="/back" class="back-button">← Back to Search</a>
+            <button class="download-all-btn" onclick="downloadAllOrders()" id="download-btn">
+                📥 Download All Orders (ZIP)
+            </button>
+        </div>
+
+        <div class="download-progress" id="download-progress">
+            <div class="download-status" id="download-status">Preparing download...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Modal -->
+    <div id="orders-modal" class="orders-modal">
+        <div class="orders-modal-content">
+            <span class="close-modal" onclick="closeOrdersModal()">&times;</span>
+            <h2>Case Orders</h2>
+            <div id="orders-content">
+                <div class="loading">Loading orders...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden form to store orders HTML -->
+    <form id="orders-form" class="hidden">
+        <textarea name="orders_html">{{ orders_html|safe }}</textarea>
+    </form>
+
+    <!-- Hidden form for orders data -->
+    <form id="orders-data-form" class="hidden">
+        <input type="hidden" name="case_type" value="{{ case_type }}">
+        <input type="hidden" name="case_number" value="{{ case_number }}">
+        <input type="hidden" name="case_year" value="{{ case_year }}">
+        <input type="hidden" name="captcha_entered" value="{{ captcha_entered }}">
+    </form>
+
+    <script>
+        // Hide only the "Orders" hyperlinks from the UI
+        document.addEventListener('DOMContentLoaded', function() {
+            const allLinks = document.querySelectorAll('a');
+            allLinks.forEach(link => {
+                const linkText = link.textContent.trim();
+                const href = link.getAttribute('href') || '';
+                
+                if (linkText === 'Orders' || linkText === 'Order' || 
+                    (linkText.toLowerCase().includes('orders') && href.includes('order'))) {
+                    link.style.display = 'none';
+                }
+            });
+        });
+
+        // Override only the specific "Orders" links to open in modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const allLinks = document.querySelectorAll('a');
+            allLinks.forEach(link => {
+                const linkText = link.textContent.trim().toLowerCase();
+                const href = link.getAttribute('href') || '';
+                
+                if (linkText === 'orders' || linkText === 'order' || 
+                    (linkText.includes('orders') && href.includes('order'))) {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        openOrdersModal();
+                    });
+                }
+            });
+        });
+
+        function openOrdersModal() {
+            const modal = document.getElementById('orders-modal');
+            const content = document.getElementById('orders-content');
+            
+            modal.style.display = 'block';
+            content.innerHTML = '<div class="loading">Loading orders...</div>';
+            
+            const form = document.getElementById('orders-data-form');
+            const formData = new FormData(form);
+            
+            fetch('/get-orders-data', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayOrders(data.orders_data);
+                } else {
+                    content.innerHTML = '<div class="loading">Error loading orders: ' + data.error + '</div>';
+                }
+            })
+            .catch(error => {
+                content.innerHTML = '<div class="loading">Error loading orders: ' + error.message + '</div>';
+            });
+        }
+
+        function closeOrdersModal() {
+            document.getElementById('orders-modal').style.display = 'none';
+        }
+
+        function displayOrders(ordersData) {
+            const content = document.getElementById('orders-content');
+            
+            if (ordersData.length === 0) {
+                content.innerHTML = '<div class="loading">No orders found for this case.</div>';
+                return;
+            }
+            
+            let html = '';
+            ordersData.forEach((order, index) => {
+                html += `
+                    <div class="order-item">
+                        <div class="order-title">${order.title}</div>
+                        <div class="order-actions">
+                            <a href="${order.url}" target="_blank" class="order-btn view-btn">👁️ View Order</a>
+                            <a href="${order.url}" download="${order.filename}" class="order-btn download-btn">📥 Download</a>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            content.innerHTML = html;
+        }
+
+        function downloadAllOrders() {
+            const downloadBtn = document.getElementById('download-btn');
+            const progressDiv = document.getElementById('download-progress');
+            const statusDiv = document.getElementById('download-status');
+            const progressFill = document.getElementById('progress-fill');
+            
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = '📥 Preparing ZIP...';
+            progressDiv.style.display = 'block';
+            statusDiv.textContent = 'Creating ZIP file with all orders...';
+            progressFill.style.width = '50%';
+            
+            const ordersForm = document.getElementById('orders-form');
+            const formData = new FormData(ordersForm);
+            
+            fetch('/download-all-orders', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    const contentDisposition = response.headers.get('content-disposition');
+                    let filename = 'all_orders.zip';
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                        if (filenameMatch) {
+                            filename = filenameMatch[1];
+                        }
+                    }
+                    
+                    return response.blob().then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                        
+                        statusDiv.textContent = '✅ ZIP file downloaded successfully!';
+                        progressFill.style.width = '100%';
+                        downloadBtn.disabled = false;
+                        downloadBtn.textContent = '📥 Download All Orders (ZIP)';
+                    });
+                } else {
+                    throw new Error('Download failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                statusDiv.textContent = '❌ Error creating ZIP file. Please try again.';
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = '📥 Download All Orders (ZIP)';
+            });
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('orders-modal');
+            if (event.target === modal) {
+                closeOrdersModal();
+            }
+        }
+    </script>
+</body>
+</html>
