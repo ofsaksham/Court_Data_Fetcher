@@ -250,7 +250,7 @@ The application handles various error scenarios:
 - **Pagination**: Support for multiple orders/judgments
 - **Cloud Deployment**: Support for various cloud platforms
 - **Unit Tests**: Comprehensive test coverage
-- **CI/CD Pipeline**: Automated testing and deployment
+
 - **API Endpoints**: RESTful API for programmatic access
 - **Caching**: Redis-based caching for improved performance
 - **Analytics**: Usage statistics and monitoring
