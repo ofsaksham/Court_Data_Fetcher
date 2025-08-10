@@ -69,7 +69,7 @@ The application targets the Delhi High Court's public portal for case informatio
 ## 📚 Documentation
 
 - [API Documentation](docs/API.md) - Detailed API endpoints, request/response formats, and usage examples
-- [Deployment Guide](docs/DEPLOYMENT.md) - Comprehensive deployment instructions for local, Docker, and production environments
+- [Deployment Guide](docs/DEPLOYMENT.md) - Comprehensive deployment instructions for local and production environments
 
 ## 🚀 Setup Instructions
 
@@ -77,6 +77,8 @@ The application targets the Delhi High Court's public portal for case informatio
 - Python 3.8 or higher
 - Chrome browser installed
 - ChromeDriver (automatically managed by webdriver-manager)
+
+**Note**: This project has been simplified to run directly without Docker for easier setup and development.
 
 ### Environment Variables (Optional)
 The application can be configured using environment variables:
@@ -114,6 +116,8 @@ export SELENIUM_RETRY_ATTEMPTS=3
 
 4. **Access the application**
    Open your browser and navigate to `http://localhost:5000`
+
+**Simple Setup**: No Docker required - just Python and Chrome!
 
 ### 🚀 Quick Start
 For immediate testing, try these sample case details:
@@ -244,7 +248,7 @@ The application handles various error scenarios:
 ## 📈 Future Enhancements
 
 - **Pagination**: Support for multiple orders/judgments
-- **Docker Support**: Containerized deployment
+- **Cloud Deployment**: Support for various cloud platforms
 - **Unit Tests**: Comprehensive test coverage
 - **CI/CD Pipeline**: Automated testing and deployment
 - **API Endpoints**: RESTful API for programmatic access

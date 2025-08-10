@@ -6,7 +6,7 @@ This document provides comprehensive instructions for deploying the Court Data F
 
 - Python 3.8 or higher
 - Chrome browser (for Selenium)
-- Docker (optional, for containerized deployment)
+
 - Git
 
 ## Local Development Deployment
@@ -47,30 +47,7 @@ python app.py
 
 The application will be available at `http://localhost:5000`
 
-## Docker Deployment
 
-### 1. Build Docker Image
-
-```bash
-docker build -t court-data-fetcher .
-```
-
-### 2. Run with Docker Compose
-
-```bash
-docker-compose up -d
-```
-
-### 3. Run Standalone Container
-
-```bash
-docker run -d \
-  --name court-data-fetcher \
-  -p 5000:5000 \
-  -v $(pwd)/case_data.db:/app/case_data.db \
-  -v $(pwd)/logs:/app/logs \
-  court-data-fetcher
-```
 
 ## Production Deployment
 
