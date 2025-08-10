@@ -219,7 +219,7 @@ Court_Data_Fetcher/
 - **Input Validation**: Proper validation of user inputs
 - **SQL Injection Prevention**: Parameterized queries
 - **XSS Protection**: HTML escaping of user-generated content
-- **Rate Limiting**: Built-in delays to prevent overwhelming the target site
+- **Rate Limiting**: Built-in delays to prevent overwhelming the target sites
 
 ## 🧪 Testing
 
